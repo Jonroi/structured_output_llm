@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * AI-STATUS KOMPONENTTI - OLLAMA-TILAN NÄYTTÖ
+ * ===========================================
+ *
+ * Tämä komponentti näyttää paikallisen Ollama-palvelimen tilan ja käytettävissä
+ * olevat AI-mallit. Se auttaa käyttäjää ymmärtämään onko AI-toiminnallisuus
+ * saatavilla.
+ *
+ * Toiminnallisuudet:
+ * - Ollama-palvelimen yhteystilan tarkistus
+ * - Käytettävissä olevien mallien listaus
+ * - Visuaalinen tilan näyttö (vihreä/punainen)
+ * - Automaattinen tarkistus komponentin latautuessa
+ */
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";

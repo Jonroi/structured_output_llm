@@ -2,6 +2,23 @@ import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
+/**
+ * CAMPAIGN ROUTER - KAMPANJAN HALLINTA API
+ * ========================================
+ *
+ * Tämä tRPC-router tarjoaa API-endpointit kampanjojen hallintaan.
+ * Se sisältää toiminnallisuudet kampanjojen luomiseen, päivittämiseen
+ * ja hakemiseen.
+ *
+ * Tärkeimmät ominaisuudet:
+ * - Type-safe API-kutsut
+ * - Kampanjojen CRUD-toiminnot
+ * - A/B-testien hallinta
+ * - Lähteiden (sources) hallinta
+ *
+ * HUOM: Tämä on mock-toteutus. Tuotantoversiossa tietokanta-integraatio.
+ */
+
 export const campaignRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
     // TODO: Implement campaign fetching from database
@@ -13,7 +30,7 @@ export const campaignRouter = createTRPCRouter({
 
   create: publicProcedure
     .input(
-      z.object({ name: z.string().min(1), description: z.string().optional() }),
+      z.object({ name: z.string().min(1), description: z.string().optional() })
     )
     .mutation(async ({ ctx, input }) => {
       // TODO: Implement campaign creation in database
@@ -32,7 +49,7 @@ export const campaignRouter = createTRPCRouter({
         name: z.string().min(1).optional(),
         description: z.string().optional(),
         status: z.enum(["draft", "active", "paused", "completed"]).optional(),
-      }),
+      })
     )
     .mutation(async ({ ctx, input }) => {
       // TODO: Implement campaign update in database

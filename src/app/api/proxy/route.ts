@@ -1,5 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+/**
+ * PROXY API - CORS-KIERTÄVÄ PALVELIN
+ * ===================================
+ *
+ * Tämä API-route toimii proxyna ulkoisten verkkosivujen lataamiseen iframe:ssä.
+ * Se kiertää CORS-rajoitukset ja injektoi JavaScript-koodin elementtien valintaa varten.
+ *
+ * Toiminnallisuudet:
+ * - Hakee ulkoisia verkkosivuja
+ * - Injektoi elementtien valintakoodin
+ * - Korjaa suhteelliset URL:t absoluuttisiksi
+ * - Estää ulkoiset API-kutsut iframe:ssä
+ * - Käsittelee CORS-preflight pyynnöt
+ */
+
+/**
+ * GET - Hakee verkkosivun ja injektoi elementtien valintakoodin
+ *
+ * @param request - Next.js request-objekti
+ * @returns Response - Muokattu HTML sisältäen elementtien valintakoodin
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const targetUrl = searchParams.get("url");

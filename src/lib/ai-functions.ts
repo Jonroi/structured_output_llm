@@ -13,14 +13,44 @@ import {
   createContentGenerationPrompt,
 } from "~/lib/ollama-client";
 
-// AI Content Generation Function
+/**
+ * AI-FUNKTIOT - STRUCTURED OUTPUT - TOTEUTUS
+ * ==========================================
+ *
+ * Tämä tiedosto sisältää kaikki AI-toiminnallisuudet, jotka käyttävät structured output -tekniikkaa.
+ * Kaikki funktiot palauttavat type-safe vastaukset, jotka on validoitu Zod-skeemojen avulla.
+ *
+ * Tärkeimmät ominaisuudet:
+ * - Type-safe AI-kutsut
+ * - Zod-validointi kaikille vastauksille
+ * - Fallback-toiminnallisuus virhetilanteissa
+ * - Structured JSON-output Ollama:n kanssa
+ */
+
+// ============================================================================
+// AI-SISÄLLÖN GENEROINTI - PÄÄFUNKTIO
+// ============================================================================
+
+/**
+ * aiGeneratePageContent - Pääfunktio AI:n sisällön generoimiseksi
+ *
+ * Tämä funktio on structured output -toteutuksen ydin. Se:
+ * 1. Kutsuu Ollama API:a structuroidulla promptilla
+ * 2. Parsii AI:n JSON-vastauksen
+ * 3. Validoi vastauksen Zod-skeemalla
+ * 4. Palauttaa type-safe AIContentGeneration-objektin
+ *
+ * @param originalContent - Alkuperäinen sisältö, jota parannetaan
+ * @param context - Konteksti AI:lle (kampanja, kohderyhmä, rajoitukset, ohjeet)
+ * @returns Promise<AIContentGeneration> - Type-safe AI-vastaus
+ */
 export async function aiGeneratePageContent(
   originalContent: string,
   context: {
-    campaignName: string;
-    targetAudience: string;
-    restrictions?: string[];
-    guidance?: string;
+    campaignName: string; // Kampanjan nimi (esim. "Summer Sale 2025")
+    targetAudience: string; // Kohderyhmä (esim. "Young professionals")
+    restrictions?: string[]; // AI-rajoitukset (esim. ["Ei emoji", "Ammatillinen sävy"])
+    guidance?: string; // AI-ohjeet (esim. "Tee siitä jännittävä")
   }
 ): Promise<AIContentGeneration> {
   try {

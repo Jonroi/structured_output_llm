@@ -12,6 +12,24 @@ import {
   CampaignPersonalizationSchema,
 } from "~/lib/types/ai-output";
 
+/**
+ * PERSONALIZATION ROUTER - AI-PERSONALISATIO API
+ * ==============================================
+ *
+ * Tämä tRPC-router tarjoaa API-endpointit AI-persoonallistamiseen.
+ * Se integroi structured output -toiminnallisuuden tRPC:hen ja tarjoaa
+ * type-safe API-kutsut AI-generoinnille.
+ *
+ * Tärkeimmät ominaisuudet:
+ * - AI-sisällön generointi structuroidulla outputilla
+ * - AI-komentojen generointi (IPC)
+ * - Kampanjan personalisointisuunnitelman generointi
+ * - Zod-validointi kaikille inputeille ja outputeille
+ *
+ * Kaikki endpointit käyttävät structured output -tekniikkaa ja palauttavat
+ * type-safe vastaukset, jotka on validoitu Zod-skeemojen avulla.
+ */
+
 export const personalizationRouter = createTRPCRouter({
   // Generate AI content for a specific element
   generateContent: publicProcedure
@@ -22,7 +40,7 @@ export const personalizationRouter = createTRPCRouter({
         targetAudience: z.string(),
         restrictions: z.array(z.string()).optional(),
         guidance: z.string().optional(),
-      }),
+      })
     )
     .mutation(async ({ input }) => {
       const result = await aiGeneratePageContent(input.originalContent, {
@@ -56,14 +74,14 @@ export const personalizationRouter = createTRPCRouter({
           attributes: z.record(z.string()).optional(),
         }),
         sessionId: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input }) => {
       const result = await aiGenerateIpc(
         input.action,
         input.target,
         input.changes,
-        input.sessionId,
+        input.sessionId
       );
 
       return result;
@@ -81,14 +99,14 @@ export const personalizationRouter = createTRPCRouter({
             aiGenerated: z.boolean(),
             restrictions: z.array(z.string()).optional(),
             guidance: z.string().optional(),
-          }),
+          })
         ),
-      }),
+      })
     )
     .mutation(async ({ input }) => {
       const result = await aiGenerateCampaignPersonalization(
         input.campaignId,
-        input.elements,
+        input.elements
       );
 
       return result;
@@ -105,7 +123,7 @@ export const personalizationRouter = createTRPCRouter({
         aiGenerated: z.boolean(),
         restrictions: z.array(z.string()).optional(),
         guidance: z.string().optional(),
-      }),
+      })
     )
     .mutation(async ({ ctx, input }) => {
       // TODO: Save to database
@@ -146,9 +164,9 @@ export const personalizationRouter = createTRPCRouter({
           z.object({
             selector: z.string(),
             content: z.string(),
-          }),
+          })
         ),
-      }),
+      })
     )
     .mutation(async ({ input }) => {
       // TODO: Apply changes to website via proxy

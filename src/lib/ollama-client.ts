@@ -1,37 +1,84 @@
 import { z } from "zod";
 
-// Ollama API response schema
+/**
+ * OLLAMA API - CLIENT JA STRUCTURED OUTPUT - TOTEUTUS
+ * ===================================================
+ *
+ * Tämä tiedosto sisältää Ollama API:n client-toteutuksen ja structured output -toiminnallisuuden.
+ * Se tarjoaa metodit AI:n kutsumiseksi, JSON-vastauksen parsintaan ja structuroitujen promptien luomiseen.
+ */
+
+// ============================================================================
+// OLLAMA API - KONFIGURAATIO JA SKEEMAT
+// ============================================================================
+
+/**
+ * OllamaResponseSchema - Määrittelee Ollama API:n vastauksen rakenteen
+ * Käytetään validoimaan, että Ollama palauttaa oikean muotoisen vastauksen
+ */
 const OllamaResponseSchema = z.object({
-  model: z.string(),
-  created_at: z.string(),
-  response: z.string(),
-  done: z.boolean(),
+  model: z.string(), // Käytetty AI-mallin nimi
+  created_at: z.string(), // Vastauksen luontiaika
+  response: z.string(), // AI:n tekstivastaus (sisältää JSON:in)
+  done: z.boolean(), // Onko vastaus valmis
 });
 
-// Ollama API configuration
+/**
+ * Ollama API:n konfiguraatio
+ * Oletuksena Ollama pyörii paikallisesti portissa 11434
+ */
 const OLLAMA_BASE_URL = "http://localhost:11434";
 
+// ============================================================================
+// OLLAMA API - TYYPIT JA INTERFACET
+// ============================================================================
+
+/**
+ * OllamaGenerateRequest - Määrittelee Ollama API:n generointipyynnön rakenteen
+ * Sisältää kaikki tarvittavat parametrit AI:n kutsumiseksi
+ */
 export interface OllamaGenerateRequest {
-  model: string;
-  prompt: string;
-  stream?: boolean;
+  model: string; // Käytettävä AI-mallin nimi (esim. "llama3.2")
+  prompt: string; // AI:lle lähetettävä prompt
+  stream?: boolean; // Haluatko streaming-vastauksen (ei käytössä)
   options?: {
-    temperature?: number;
-    top_p?: number;
-    top_k?: number;
-    num_predict?: number;
+    temperature?: number; // AI:n luovuuden taso (0-1, korkeampi = luovempi)
+    top_p?: number; // Nucleus sampling parametri
+    top_k?: number; // Top-k sampling parametri
+    num_predict?: number; // Maksimimäärä generoitavia tokenia
   };
 }
 
-export class OllamaClient {
-  private baseUrl: string;
+// ============================================================================
+// OLLAMA CLIENT - LUOKKA
+// ============================================================================
 
+/**
+ * OllamaClient - Luokka Ollama API:n kutsumiseksi
+ * Tarjoaa metodit AI:n kutsumiseksi, mallien listaukseen ja yhteystilan tarkistamiseen
+ */
+export class OllamaClient {
+  private baseUrl: string; // Ollama API:n perus-URL
+
+  /**
+   * Konstruktori - alustaa Ollama clientin
+   * @param baseUrl - Ollama API:n URL (oletuksena localhost:11434)
+   */
   constructor(baseUrl: string = OLLAMA_BASE_URL) {
     this.baseUrl = baseUrl;
   }
 
+  /**
+   * generate - Kutsuu Ollama API:a sisällön generoimiseksi
+   * Tämä on päämetodi AI:n kutsumiseksi structured output -toiminnallisuudessa
+   *
+   * @param request - Ollama API:n generointipyyntö
+   * @returns Promise<string> - AI:n tekstivastaus (sisältää JSON:in)
+   * @throws Error jos API-kutsu epäonnistuu
+   */
   async generate(request: OllamaGenerateRequest): Promise<string> {
     try {
+      // Lähetä POST-pyyntö Ollama API:lle
       const response = await fetch(`${this.baseUrl}/api/generate`, {
         method: "POST",
         headers: {
@@ -39,19 +86,22 @@ export class OllamaClient {
         },
         body: JSON.stringify({
           ...request,
-          stream: false, // We want a single response, not streaming
+          stream: false, // Haluamme yhden vastauksen, ei streaming-vastauksia
         }),
       });
 
+      // Tarkista että vastaus on onnistunut
       if (!response.ok) {
         throw new Error(
           `Ollama API error: ${response.status} ${response.statusText}`
         );
       }
 
+      // Parsii JSON-vastauksen ja validoi se Zod-skeemalla
       const data = (await response.json()) as unknown;
       const parsed = OllamaResponseSchema.parse(data);
 
+      // Palauta AI:n tekstivastaus (sisältää structuroidun JSON:in)
       return parsed.response;
     } catch (error) {
       console.error("Ollama API call failed:", error);

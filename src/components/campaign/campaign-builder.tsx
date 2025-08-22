@@ -1,5 +1,24 @@
 "use client";
 
+/**
+ * CAMPAIGN BUILDER - PÄÄKOMPONENTTI
+ * =================================
+ *
+ * Tämä on sovelluksen pääkomponentti, joka tarjoaa visuaalisen työkalun
+ * verkkosivujen muokkaamiseen kampanjoita varten. Se integroi:
+ *
+ * - Elementtien visuaalisen valinnan iframe:ssä
+ * - AI-generoinnin Ollama:n kanssa
+ * - Structured output -toiminnallisuuden
+ * - Reaaliaikaisen sisällön muokkauksen
+ *
+ * Tärkeimmät ominaisuudet:
+ * - Proxy-järjestelmä ulkoisten sivujen lataamiseen
+ * - AI-integraatio structuroidulla outputilla
+ * - Type-safe tietojen käsittely
+ * - Responsive design
+ */
+
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -21,18 +40,29 @@ import { aiGeneratePageContent } from "~/lib/ai-functions";
 import { AIStatus } from "./ai-status";
 
 export function CampaignBuilder() {
-  const [isAiManaged, setIsAiManaged] = useState(true);
+  // ============================================================================
+  // STATE-MUUTTUJAT - KOMPONENTIN TILA
+  // ============================================================================
+
+  // AI-toiminnallisuuden tila
+  const [isAiManaged, setIsAiManaged] = useState(true); // Onko AI-hallinta käytössä
+  const [isGenerating, setIsGenerating] = useState(false); // Onko AI-generointi käynnissä
+  const [aiRestrictions, setAiRestrictions] = useState(""); // AI-rajoitukset (esim. "Ei emoji")
+  const [aiGuidance, setAiGuidance] = useState(""); // AI-ohjeet (esim. "Tee siitä jännittävä")
+
+  // Elementtien valinta ja muokkaus
   const [selectedElement, setSelectedElement] =
-    useState<SelectedElement | null>(null);
-  const [targetUrl, setTargetUrl] = useState("/api/test-page");
-  const [isProxyReady, setIsProxyReady] = useState(false);
+    useState<SelectedElement | null>(null); // Tällä hetkellä valittu elementti
   const [personalizedElements, setPersonalizedElements] = useState<
     SelectedElement[]
-  >([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [aiRestrictions, setAiRestrictions] = useState("");
-  const [aiGuidance, setAiGuidance] = useState("");
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  >([]); // Kaikki muokatut elementit
+
+  // Verkkosivun lataus ja proxy
+  const [targetUrl, setTargetUrl] = useState("/api/test-page"); // Ladattavan sivun URL
+  const [isProxyReady, setIsProxyReady] = useState(false); // Onko proxy-valmis (iframe on latautunut)
+
+  // DOM-referenssit
+  const iframeRef = useRef<HTMLIFrameElement>(null); // Referenssi iframe-elementtiin
 
   // Handle iframe messages
   useEffect(() => {

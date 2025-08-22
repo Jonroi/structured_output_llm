@@ -1,5 +1,25 @@
 import { NextResponse } from "next/server";
 
+/**
+ * TEST-PAGE API - TESTIYMPÄRISTÖ
+ * ==============================
+ *
+ * Tämä API-route tarjoaa yksinkertaisen testisivun Campaign Builderin testaamiseen.
+ * Se on luotettava testikohde, koska se ei aiheuta CORS-ongelmia ja sisältää
+ * erilaisia elementtejä testattavaksi.
+ *
+ * Käyttötarkoitukset:
+ * - Campaign Builderin testaaminen
+ * - Elementtien valinnan testaaminen
+ * - AI-generoinnin testaaminen
+ * - Proxy-järjestelmän testaaminen
+ */
+
+/**
+ * GET - Palauttaa testisivun HTML-sisällön
+ *
+ * @returns NextResponse - HTML-sisältö testisivulle
+ */
 export async function GET() {
   const testHtml = `
 <!DOCTYPE html>
