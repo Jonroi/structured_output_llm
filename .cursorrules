@@ -1,0 +1,154 @@
+# Cursor IDE Rules for Markdown Best Practices
+
+## General Rules
+
+- Always follow strict markdown formatting guidelines
+- Prioritize readability and maintainability
+- Ensure all code is production-ready
+
+## Markdown Formatting Rules
+
+### 1. Links and URLs
+
+- NEVER use bare URLs in markdown
+- Always wrap URLs in proper markdown link syntax: `[text](url)`
+- Example:
+  - ❌ BAD: Visit https://example.com
+  - ✅ GOOD: Visit [example website](https://example.com)
+
+### 2. Headings
+
+- NEVER add trailing punctuation to headings (no colons, periods, etc.)
+- Example:
+  - ❌ BAD: `## Installation:`
+  - ✅ GOOD: `## Installation`
+- Avoid duplicate heading text in the same document
+- Use descriptive, unique headings
+
+### 3. Ordered Lists
+
+- Always use proper indentation for numbered lists
+- Maintain consecutive numbering (1, 2, 3...)
+- Indent code blocks and sub-content under list items with 3 spaces
+- Example:
+
+  ````markdown
+  1. First step:
+
+     ```bash
+     command here
+     ```
+  ````
+
+  2. Second step:
+     - Sub-item
+     - Another sub-item
+
+  3. Third step
+
+  ```
+
+  ```
+
+### 4. Code Blocks
+
+- Always surround fenced code blocks with blank lines
+- Example:
+
+  ````markdown
+  Some text here.
+
+  ```bash
+  command here
+  ```
+  ````
+
+  More text here.
+
+  ```
+
+  ```
+
+### 5. Line Length
+
+- Keep lines under 80 characters when possible
+- Break long lines logically
+- Use line continuation for long commands:
+  ```bash
+  very-long-command \
+    --with-many-options \
+    --and-parameters
+  ```
+
+### 6. File Organization
+
+- Use consistent heading hierarchy
+- Start with # for document title
+- Use ## for main sections
+- Use ### for subsections
+
+## Linting Integration
+
+- Run `markdownlint` before committing
+- Fix all MD001-MD999 warnings
+- Use Prettier for consistent formatting
+
+## Specific Error Prevention
+
+### MD029 (Ordered List Prefix)
+
+- Always maintain proper numbered list sequence
+- Indent sub-content properly to avoid breaking list numbering
+
+### MD034 (Bare URLs)
+
+- Convert all bare URLs to proper markdown links
+- Use descriptive link text
+
+### MD026 (Trailing Punctuation)
+
+- Remove all trailing punctuation from headings
+
+### MD024 (Duplicate Headings)
+
+- Make headings unique within the document
+- Add context or specificity to similar headings
+
+### MD031 (Blanks Around Fences)
+
+- Always add blank lines before and after code blocks
+
+## Code Quality Standards
+
+- All markdown must pass linting without warnings
+- Use semantic and accessible formatting
+- Maintain consistent style throughout the project
+
+## Tools Integration
+
+- Use Prettier for automatic formatting
+- Run markdownlint for validation
+- Check formatting before each commit
+
+## File Creation Guidelines
+
+When creating new markdown files:
+
+1. Start with a clear document title (# heading)
+2. Add a brief description paragraph
+3. Use consistent heading structure
+4. Follow all the rules above from the start
+5. Test with markdownlint before saving
+
+## Error Handling
+
+If you encounter markdown linting errors:
+
+1. Fix bare URLs immediately
+2. Remove trailing punctuation from headings
+3. Fix ordered list numbering and indentation
+4. Add blank lines around code blocks
+5. Make duplicate headings unique
+6. Re-run linting to verify fixes
+
+Remember: Clean, well-formatted markdown is essential for professional documentation and better user experience.
