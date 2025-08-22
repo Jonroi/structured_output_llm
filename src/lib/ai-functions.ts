@@ -7,6 +7,7 @@ import {
   type AIIPC,
   type CampaignPersonalization,
 } from "~/lib/types/ai-output";
+import { ollamaClient, extractJSONFromResponse, createContentGenerationPrompt } from "~/lib/ollama-client";
 
 // AI Content Generation Function
 export async function aiGeneratePageContent(
@@ -18,38 +19,61 @@ export async function aiGeneratePageContent(
     guidance?: string;
   }
 ): Promise<AIContentGeneration> {
-  // TODO: Replace with actual AI call (OpenAI, Anthropic, etc.)
-  const prompt = `
-    Original content: "${originalContent}"
-    Campaign: ${context.campaignName}
-    Target audience: ${context.targetAudience}
-    ${context.restrictions ? `Restrictions: ${context.restrictions.join(", ")}` : ""}
-    ${context.guidance ? `Guidance: ${context.guidance}` : ""}
-    
-    Generate personalized content that matches the campaign goals and target audience.
-    Return a JSON object with the following structure:
-    {
-      "originalContent": "original text",
-      "generatedContent": "new personalized text",
-      "reasoning": "explanation of changes",
-      "confidence": 0.85,
-      "alternatives": ["alternative 1", "alternative 2"]
+  try {
+    // Check if Ollama is available
+    const isAvailable = await ollamaClient.isAvailable();
+    if (!isAvailable) {
+      // Fallback to mock response if Ollama is not available
+      console.warn("Ollama is not available, using mock response");
+      const mockResponse = {
+        originalContent,
+        generatedContent: `[Mock AI] ${originalContent} - Optimized for ${context.campaignName}`,
+        reasoning: `Mock: Content personalized for ${context.targetAudience} in ${context.campaignName} campaign`,
+        confidence: 0.75,
+        alternatives: [
+          `Mock Alternative 1: ${originalContent} - Enhanced`,
+          `Mock Alternative 2: ${originalContent} - Premium`,
+        ],
+      };
+      return AIContentGenerationSchema.parse(mockResponse);
     }
-  `;
 
-  // Mock response for now
-  const mockResponse = {
-    originalContent,
-    generatedContent: `[AI Generated] ${originalContent} - Optimized for ${context.campaignName}`,
-    reasoning: `Content personalized for ${context.targetAudience} in ${context.campaignName} campaign`,
-    confidence: 0.85,
-    alternatives: [
-      `Alternative 1: ${originalContent} - Enhanced`,
-      `Alternative 2: ${originalContent} - Premium`,
-    ],
-  };
+    // Create structured prompt for Ollama
+    const prompt = createContentGenerationPrompt(originalContent, context);
 
-  return AIContentGenerationSchema.parse(mockResponse);
+    // Call Ollama API
+    const response = await ollamaClient.generate({
+      model: "llama3.2", // Use your preferred model
+      prompt,
+      options: {
+        temperature: 0.7,
+        top_p: 0.9,
+        num_predict: 500,
+      },
+    });
+
+    // Extract and parse JSON response
+    const jsonResponse = extractJSONFromResponse(response);
+    
+    // Validate and return the structured response
+    return AIContentGenerationSchema.parse(jsonResponse);
+  } catch (error) {
+    console.error("AI content generation failed:", error);
+    
+    // Fallback to enhanced mock response on error
+    const fallbackResponse = {
+      originalContent,
+      generatedContent: `[Enhanced] ${originalContent.replace(/\b\w/g, l => l.toUpperCase())} - Tailored for ${context.campaignName}`,
+      reasoning: `Fallback: Enhanced version created due to AI service unavailability. Applied basic improvements for ${context.targetAudience}.`,
+      confidence: 0.6,
+      alternatives: [
+        `Enhanced Alternative: ${originalContent} with improved appeal`,
+        `Professional Version: ${originalContent} - optimized for conversion`,
+      ],
+    };
+    
+    return AIContentGenerationSchema.parse(fallbackResponse);
+  }
 }
 
 // AI IPC Function

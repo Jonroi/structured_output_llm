@@ -18,6 +18,7 @@ import { Bot, Save, PlusCircle, Upload, Globe, Settings } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { SelectedElement } from "~/lib/types/ai-output";
 import { aiGeneratePageContent } from "~/lib/ai-functions";
+import { AIStatus } from "./ai-status";
 
 export function CampaignBuilder() {
   const [isAiManaged, setIsAiManaged] = useState(true);
@@ -28,6 +29,9 @@ export function CampaignBuilder() {
   const [personalizedElements, setPersonalizedElements] = useState<
     SelectedElement[]
   >([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiRestrictions, setAiRestrictions] = useState("");
+  const [aiGuidance, setAiGuidance] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Handle iframe messages
@@ -63,14 +67,22 @@ export function CampaignBuilder() {
 
   // Generate AI content for selected element
   const handleGenerateAI = async () => {
-    if (!selectedElement) return;
+    if (!selectedElement || isGenerating) return;
 
+    setIsGenerating(true);
+    
     try {
+      // Parse restrictions from input
+      const restrictions = aiRestrictions
+        .split(',')
+        .map(r => r.trim())
+        .filter(r => r.length > 0);
+
       const result = await aiGeneratePageContent(selectedElement.content.text, {
         campaignName: "Summer Sale 2025",
         targetAudience: "Young professionals",
-        restrictions: ["No emojis", "Professional tone"],
-        guidance: "Make it exciting and action-oriented",
+        restrictions: restrictions.length > 0 ? restrictions : undefined,
+        guidance: aiGuidance || undefined,
       });
 
       // Update the selected element with AI-generated content
@@ -101,6 +113,9 @@ export function CampaignBuilder() {
       console.log("AI Generation Result:", result);
     } catch (error) {
       console.error("AI generation failed:", error);
+      // You could add a toast notification here
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -244,8 +259,10 @@ export function CampaignBuilder() {
           </div>
         </div>
 
-        <aside className="md:col-span-1 lg:col-span-1 h-full">
-          <Card className="h-full">
+        <aside className="md:col-span-1 lg:col-span-1 h-full flex flex-col gap-4">
+          <AIStatus />
+          
+          <Card className="flex-1">
             <CardHeader>
               <CardTitle>
                 {selectedElement ? "Editing Element" : "Select Element"}
@@ -303,18 +320,22 @@ export function CampaignBuilder() {
                         <Label htmlFor="ai-restrictions">
                           Restrictions for AI
                         </Label>
-                        <Textarea
-                          id="ai-restrictions"
-                          placeholder="e.g. Do not use emojis."
-                        />
+                                                 <Textarea
+                           id="ai-restrictions"
+                           placeholder="e.g. Do not use emojis, Keep it professional"
+                           value={aiRestrictions}
+                           onChange={(e) => setAiRestrictions(e.target.value)}
+                         />
                       </div>
 
                       <div>
                         <Label htmlFor="ai-guidance">Guidance for AI</Label>
-                        <Textarea
-                          id="ai-guidance"
-                          placeholder="e.g. Make it sound exciting."
-                        />
+                                                 <Textarea
+                           id="ai-guidance"
+                           placeholder="e.g. Make it sound exciting and action-oriented"
+                           value={aiGuidance}
+                           onChange={(e) => setAiGuidance(e.target.value)}
+                         />
                       </div>
 
                       <div>
@@ -327,13 +348,23 @@ export function CampaignBuilder() {
                   )}
 
                   <div className="space-y-2">
-                    <Button
-                      size="sm"
-                      className="w-full"
-                      onClick={handleGenerateAI}
-                    >
-                      <Bot className="mr-2 h-4 w-4" /> Generate with AI
-                    </Button>
+                                         <Button
+                       size="sm"
+                       className="w-full"
+                       onClick={handleGenerateAI}
+                       disabled={isGenerating}
+                     >
+                       {isGenerating ? (
+                         <>
+                           <Settings className="mr-2 h-4 w-4 animate-spin" /> 
+                           Generating...
+                         </>
+                       ) : (
+                         <>
+                           <Bot className="mr-2 h-4 w-4" /> Generate with AI
+                         </>
+                       )}
+                     </Button>
                     <Button variant="outline" size="sm" className="w-full">
                       Import from Wizard
                     </Button>
