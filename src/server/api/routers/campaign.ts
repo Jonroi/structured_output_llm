@@ -13,7 +13,7 @@ export const campaignRouter = createTRPCRouter({
 
   create: publicProcedure
     .input(
-      z.object({ name: z.string().min(1), description: z.string().optional() })
+      z.object({ name: z.string().min(1), description: z.string().optional() }),
     )
     .mutation(async ({ ctx, input }) => {
       // TODO: Implement campaign creation in database
@@ -32,7 +32,7 @@ export const campaignRouter = createTRPCRouter({
         name: z.string().min(1).optional(),
         description: z.string().optional(),
         status: z.enum(["draft", "active", "paused", "completed"]).optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       // TODO: Implement campaign update in database

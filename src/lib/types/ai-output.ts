@@ -62,7 +62,7 @@ export const CampaignPersonalizationSchema = z.object({
       aiGenerated: z.boolean(),
       restrictions: z.array(z.string()).optional(),
       guidance: z.string().optional(),
-    })
+    }),
   ),
   metadata: z.object({
     createdAt: z.string(),

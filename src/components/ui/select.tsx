@@ -25,7 +25,7 @@ const Select = ({
             value,
             defaultValue,
             onValueChange,
-          } as any);
+          } as React.ComponentProps<typeof SelectTrigger>);
         }
         return child;
       })}
@@ -53,11 +53,11 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
       size = "default",
       ...props
     },
-    ref
+    ref,
   ) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [selectedValue, setSelectedValue] = React.useState(
-      value || defaultValue
+      value ?? defaultValue,
     );
 
     const handleClick = () => {
@@ -79,17 +79,17 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
           className={cn(
             "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
             size === "default" ? "h-9" : "h-8",
-            className
+            className,
           )}
           {...props}
         >
           <span className="line-clamp-1 flex items-center gap-2">
-            {selectedValue || children}
+            {selectedValue ?? children}
           </span>
           <ChevronDown
             className={cn(
               "size-4 opacity-50 transition-transform",
-              isOpen && "rotate-180"
+              isOpen && "rotate-180",
             )}
           />
         </button>
@@ -100,7 +100,7 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
               if (React.isValidElement(child) && child.type === SelectContent) {
                 return React.cloneElement(child, {
                   onSelect: handleSelect,
-                } as any);
+                } as React.ComponentProps<typeof SelectContent>);
               }
               return null;
             })}
@@ -108,7 +108,7 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
         )}
       </div>
     );
-  }
+  },
 );
 SelectTrigger.displayName = "SelectTrigger";
 
@@ -123,7 +123,9 @@ const SelectContent = ({ children, onSelect }: SelectContentProps) => {
       <div className="p-1">
         {React.Children.map(children, (child) => {
           if (React.isValidElement(child)) {
-            return React.cloneElement(child, { onSelect } as any);
+            return React.cloneElement(child, {
+              onSelect,
+            } as React.ComponentProps<typeof SelectItem>);
           }
           return child;
         })}
@@ -155,8 +157,8 @@ const SelectItem = React.forwardRef<HTMLButtonElement, SelectItemProps>(
         onClick={handleClick}
         disabled={disabled}
         className={cn(
-          "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-          className
+          "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground hover:bg-accent hover:text-accent-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+          className,
         )}
         {...props}
       >
@@ -166,7 +168,7 @@ const SelectItem = React.forwardRef<HTMLButtonElement, SelectItemProps>(
         {children}
       </button>
     );
-  }
+  },
 );
 SelectItem.displayName = "SelectItem";
 

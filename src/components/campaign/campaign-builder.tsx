@@ -15,7 +15,7 @@ import {
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
 import { Bot, Save, PlusCircle, Upload, Globe, Settings } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { SelectedElement } from "~/lib/types/ai-output";
 import { aiGeneratePageContent } from "~/lib/ai-functions";
 import { AIStatus } from "./ai-status";
@@ -37,10 +37,11 @@ export function CampaignBuilder() {
   // Handle iframe messages
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === "PROXY_READY") {
+      const data = event.data as { type: string; data?: SelectedElement };
+      if (data?.type === "PROXY_READY") {
         setIsProxyReady(true);
-      } else if (event.data.type === "ELEMENT_SELECTED") {
-        const element: SelectedElement = event.data.data;
+      } else if (data?.type === "ELEMENT_SELECTED" && data.data) {
+        const element: SelectedElement = data.data;
         setSelectedElement(element);
 
         // Add to personalized elements if not already there
@@ -56,27 +57,18 @@ export function CampaignBuilder() {
     return () => window.removeEventListener("message", handleMessage);
   }, [personalizedElements]);
 
-  // Auto-load the test page on mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadWebsite();
-    }, 100); // Small delay to ensure iframe is ready
-
-    return () => clearTimeout(timer);
-  }, []);
-
   // Generate AI content for selected element
   const handleGenerateAI = async () => {
     if (!selectedElement || isGenerating) return;
 
     setIsGenerating(true);
-    
+
     try {
       // Parse restrictions from input
       const restrictions = aiRestrictions
-        .split(',')
-        .map(r => r.trim())
-        .filter(r => r.length > 0);
+        .split(",")
+        .map((r) => r.trim())
+        .filter((r) => r.length > 0);
 
       const result = await aiGeneratePageContent(selectedElement.content.text, {
         campaignName: "Summer Sale 2025",
@@ -120,7 +112,7 @@ export function CampaignBuilder() {
   };
 
   // Load website in proxy
-  const loadWebsite = () => {
+  const loadWebsite = useCallback(() => {
     // Reset proxy ready state when loading new page
     setIsProxyReady(false);
 
@@ -136,13 +128,22 @@ export function CampaignBuilder() {
     if (iframeRef.current) {
       iframeRef.current.src = proxyUrl;
     }
-  };
+  }, [targetUrl]);
+
+  // Auto-load the test page on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadWebsite();
+    }, 100); // Small delay to ensure iframe is ready
+
+    return () => clearTimeout(timer);
+  }, [loadWebsite]); // Add loadWebsite back now that it's properly memoized
 
   return (
-    <div className="flex flex-col h-[calc(100vh-theme(spacing.16))]">
-      <header className="flex items-center justify-between pb-4 border-b">
+    <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col">
+      <header className="flex items-center justify-between border-b pb-4">
         <div>
-          <h1 className="text-3xl font-bold font-headline tracking-tight">
+          <h1 className="font-headline text-3xl font-bold tracking-tight">
             Campaign Builder
           </h1>
           <p className="text-muted-foreground">
@@ -157,9 +158,9 @@ export function CampaignBuilder() {
         </div>
       </header>
 
-      <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6 pt-4 flex-1">
-        <div className="md:col-span-2 lg:col-span-3 h-full flex flex-col gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid flex-1 gap-6 pt-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className="flex h-full flex-col gap-4 md:col-span-2 lg:col-span-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Select defaultValue="summer-sale-2025">
               <SelectTrigger>
                 <SelectValue placeholder="Select Campaign" />
@@ -171,7 +172,7 @@ export function CampaignBuilder() {
                 <SelectSeparator />
                 <Button
                   variant="ghost"
-                  className="w-full justify-start pl-8 pr-2 py-1.5 h-auto font-normal"
+                  className="h-auto w-full justify-start py-1.5 pr-2 pl-8 font-normal"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add New Campaign
@@ -190,7 +191,7 @@ export function CampaignBuilder() {
                 <SelectSeparator />
                 <Button
                   variant="ghost"
-                  className="w-full justify-start pl-8 pr-2 py-1.5 h-auto font-normal"
+                  className="h-auto w-full justify-start py-1.5 pr-2 pl-8 font-normal"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add New Source
@@ -208,7 +209,7 @@ export function CampaignBuilder() {
                 <SelectSeparator />
                 <Button
                   variant="ghost"
-                  className="w-full justify-start pl-8 pr-2 py-1.5 h-auto font-normal"
+                  className="h-auto w-full justify-start py-1.5 pr-2 pl-8 font-normal"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add new A/B test
@@ -223,7 +224,9 @@ export function CampaignBuilder() {
               <div className="flex-1">
                 <Input
                   value={targetUrl}
-                  onChange={(e) => setTargetUrl(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setTargetUrl(e.target.value)
+                  }
                   placeholder="Enter website URL to customize"
                   className="w-full"
                 />
@@ -233,19 +236,19 @@ export function CampaignBuilder() {
                 Load
               </Button>
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-muted-foreground text-xs">
               💡 Try our test page: <code>/api/test-page</code> or enter any
               website URL
             </div>
           </div>
 
           {/* Website Preview with Element Selection */}
-          <div className="bg-muted/30 rounded-lg flex-1 border relative">
+          <div className="bg-muted/30 relative flex-1 rounded-lg border">
             {!isProxyReady && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+              <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center">
                 <div className="text-center">
-                  <Settings className="h-8 w-8 mx-auto mb-2 animate-spin" />
-                  <p className="text-sm text-muted-foreground">
+                  <Settings className="mx-auto mb-2 h-8 w-8 animate-spin" />
+                  <p className="text-muted-foreground text-sm">
                     Loading website for element selection...
                   </p>
                 </div>
@@ -253,15 +256,15 @@ export function CampaignBuilder() {
             )}
             <iframe
               ref={iframeRef}
-              className="w-full h-full rounded-lg"
+              className="h-full w-full rounded-lg"
               title="Website Preview"
             />
           </div>
         </div>
 
-        <aside className="md:col-span-1 lg:col-span-1 h-full flex flex-col gap-4">
+        <aside className="flex h-full flex-col gap-4 md:col-span-1 lg:col-span-1">
           <AIStatus />
-          
+
           <Card className="flex-1">
             <CardHeader>
               <CardTitle>
@@ -286,7 +289,7 @@ export function CampaignBuilder() {
                     <Textarea
                       id="element-content"
                       value={selectedElement.content.text}
-                      onChange={(e) => {
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                         setSelectedElement((prev) =>
                           prev
                             ? {
@@ -315,27 +318,31 @@ export function CampaignBuilder() {
                   </div>
 
                   {isAiManaged && (
-                    <div className="space-y-4 pl-4 border-l-2 ml-2">
+                    <div className="ml-2 space-y-4 border-l-2 pl-4">
                       <div>
                         <Label htmlFor="ai-restrictions">
                           Restrictions for AI
                         </Label>
-                                                 <Textarea
-                           id="ai-restrictions"
-                           placeholder="e.g. Do not use emojis, Keep it professional"
-                           value={aiRestrictions}
-                           onChange={(e) => setAiRestrictions(e.target.value)}
-                         />
+                        <Textarea
+                          id="ai-restrictions"
+                          placeholder="e.g. Do not use emojis, Keep it professional"
+                          value={aiRestrictions}
+                          onChange={(
+                            e: React.ChangeEvent<HTMLTextAreaElement>
+                          ) => setAiRestrictions(e.target.value)}
+                        />
                       </div>
 
                       <div>
                         <Label htmlFor="ai-guidance">Guidance for AI</Label>
-                                                 <Textarea
-                           id="ai-guidance"
-                           placeholder="e.g. Make it sound exciting and action-oriented"
-                           value={aiGuidance}
-                           onChange={(e) => setAiGuidance(e.target.value)}
-                         />
+                        <Textarea
+                          id="ai-guidance"
+                          placeholder="e.g. Make it sound exciting and action-oriented"
+                          value={aiGuidance}
+                          onChange={(
+                            e: React.ChangeEvent<HTMLTextAreaElement>
+                          ) => setAiGuidance(e.target.value)}
+                        />
                       </div>
 
                       <div>
@@ -348,31 +355,31 @@ export function CampaignBuilder() {
                   )}
 
                   <div className="space-y-2">
-                                         <Button
-                       size="sm"
-                       className="w-full"
-                       onClick={handleGenerateAI}
-                       disabled={isGenerating}
-                     >
-                       {isGenerating ? (
-                         <>
-                           <Settings className="mr-2 h-4 w-4 animate-spin" /> 
-                           Generating...
-                         </>
-                       ) : (
-                         <>
-                           <Bot className="mr-2 h-4 w-4" /> Generate with AI
-                         </>
-                       )}
-                     </Button>
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={handleGenerateAI}
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Settings className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="mr-2 h-4 w-4" /> Generate with AI
+                        </>
+                      )}
+                    </Button>
                     <Button variant="outline" size="sm" className="w-full">
                       Import from Wizard
                     </Button>
                   </div>
                 </>
               ) : (
-                <div className="text-center text-muted-foreground">
-                  <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <div className="text-muted-foreground text-center">
+                  <Globe className="mx-auto mb-4 h-12 w-12 opacity-50" />
                   <p>Click on any element in the website to start editing</p>
                 </div>
               )}

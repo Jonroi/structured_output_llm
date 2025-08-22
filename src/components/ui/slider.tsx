@@ -26,18 +26,18 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
       step = 1,
       ...props
     },
-    ref
+    ref,
   ) => {
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = [parseFloat(event.target.value)];
       onValueChange?.(newValue);
     };
 
-    const currentValue = value[0] || 0;
+    const currentValue = value[0] ?? 0;
     const percentage = ((currentValue - min) / (max - min)) * 100;
 
     return (
-      <div className="relative flex w-full touch-none select-none items-center">
+      <div className="relative flex w-full touch-none items-center select-none">
         <input
           ref={ref}
           type="range"
@@ -47,8 +47,8 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
           value={currentValue}
           onChange={handleChange}
           className={cn(
-            "relative h-2 w-full cursor-pointer appearance-none rounded-lg bg-secondary",
-            className
+            "bg-secondary relative h-2 w-full cursor-pointer appearance-none rounded-lg",
+            className,
           )}
           style={{
             background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${percentage}%, hsl(var(--secondary)) ${percentage}%, hsl(var(--secondary)) 100%)`,
@@ -56,12 +56,12 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
           {...props}
         />
         <div
-          className="absolute h-2 w-2 rounded-full bg-primary shadow-lg"
+          className="bg-primary absolute h-2 w-2 rounded-full shadow-lg"
           style={{ left: `${percentage}%`, transform: "translateX(-50%)" }}
         />
       </div>
     );
-  }
+  },
 );
 Slider.displayName = "Slider";
 

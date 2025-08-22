@@ -10,7 +10,6 @@ const OllamaResponseSchema = z.object({
 
 // Ollama API configuration
 const OLLAMA_BASE_URL = "http://localhost:11434";
-const DEFAULT_MODEL = "llama3.2"; // Change this to your preferred model
 
 export interface OllamaGenerateRequest {
   model: string;
@@ -45,16 +44,20 @@ export class OllamaClient {
       });
 
       if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Ollama API error: ${response.status} ${response.statusText}`
+        );
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as unknown;
       const parsed = OllamaResponseSchema.parse(data);
-      
+
       return parsed.response;
     } catch (error) {
       console.error("Ollama API call failed:", error);
-      throw new Error(`Failed to generate content with Ollama: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to generate content with Ollama: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     }
   }
 
@@ -76,9 +79,11 @@ export class OllamaClient {
       if (!response.ok) {
         throw new Error("Failed to fetch models");
       }
-      
-      const data = await response.json();
-      return data.models?.map((model: any) => model.name) || [];
+
+      const data = (await response.json()) as {
+        models?: Array<{ name: string }>;
+      };
+      return data.models?.map((model) => model.name) ?? [];
     } catch (error) {
       console.error("Failed to list models:", error);
       return [];
@@ -89,14 +94,14 @@ export class OllamaClient {
 export const ollamaClient = new OllamaClient();
 
 // Helper function to extract JSON from AI response
-export function extractJSONFromResponse(response: string): any {
+export function extractJSONFromResponse(response: string): unknown {
   try {
     // Try to find JSON in the response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const jsonMatch = /\{[\s\S]*\}/.exec(response);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
-    
+
     // If no JSON found, try to parse the entire response
     return JSON.parse(response);
   } catch (error) {
