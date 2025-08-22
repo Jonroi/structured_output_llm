@@ -2,6 +2,6 @@
 
 import { CampaignBuilder } from "~/components/campaign/campaign-builder";
 
-export default function PersonalizationPage() {
+export default function DashboardPage() {
   return <CampaignBuilder />;
 }
