@@ -26,7 +26,7 @@ import {
 import { useState } from "react";
 import { Slider } from "~/components/ui/slider";
 
-export default function Home() {
+export default function PersonalizationPage() {
   const [isAiManaged, setIsAiManaged] = useState(true);
 
   return (
