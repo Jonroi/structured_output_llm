@@ -14,11 +14,114 @@ import {
 } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
-import { Bot, Save, PlusCircle, Upload } from "lucide-react";
-import { useState } from "react";
+import { Bot, Save, PlusCircle, Upload, Globe, Settings } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import type { SelectedElement } from "~/lib/types/ai-output";
+import { aiGeneratePageContent } from "~/lib/ai-functions";
 
 export function CampaignBuilder() {
   const [isAiManaged, setIsAiManaged] = useState(true);
+  const [selectedElement, setSelectedElement] =
+    useState<SelectedElement | null>(null);
+  const [targetUrl, setTargetUrl] = useState("/api/test-page");
+  const [isProxyReady, setIsProxyReady] = useState(false);
+  const [personalizedElements, setPersonalizedElements] = useState<
+    SelectedElement[]
+  >([]);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Handle iframe messages
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === "PROXY_READY") {
+        setIsProxyReady(true);
+      } else if (event.data.type === "ELEMENT_SELECTED") {
+        const element: SelectedElement = event.data.data;
+        setSelectedElement(element);
+
+        // Add to personalized elements if not already there
+        if (
+          !personalizedElements.find((el) => el.selector === element.selector)
+        ) {
+          setPersonalizedElements((prev) => [...prev, element]);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [personalizedElements]);
+
+  // Auto-load the test page on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadWebsite();
+    }, 100); // Small delay to ensure iframe is ready
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Generate AI content for selected element
+  const handleGenerateAI = async () => {
+    if (!selectedElement) return;
+
+    try {
+      const result = await aiGeneratePageContent(selectedElement.content.text, {
+        campaignName: "Summer Sale 2025",
+        targetAudience: "Young professionals",
+        restrictions: ["No emojis", "Professional tone"],
+        guidance: "Make it exciting and action-oriented",
+      });
+
+      // Update the selected element with AI-generated content
+      setSelectedElement((prev) =>
+        prev
+          ? {
+              ...prev,
+              content: {
+                ...prev.content,
+                text: result.generatedContent,
+              },
+            }
+          : null
+      );
+
+      // Update in personalized elements list
+      setPersonalizedElements((prev) =>
+        prev.map((el) =>
+          el.selector === selectedElement.selector
+            ? {
+                ...el,
+                content: { ...el.content, text: result.generatedContent },
+              }
+            : el
+        )
+      );
+
+      console.log("AI Generation Result:", result);
+    } catch (error) {
+      console.error("AI generation failed:", error);
+    }
+  };
+
+  // Load website in proxy
+  const loadWebsite = () => {
+    // Reset proxy ready state when loading new page
+    setIsProxyReady(false);
+
+    // If it's a relative URL, make it absolute
+    let fullUrl = targetUrl;
+    if (targetUrl.startsWith("/")) {
+      fullUrl = `${window.location.origin}${targetUrl}`;
+    } else if (!targetUrl.startsWith("http")) {
+      fullUrl = `https://${targetUrl}`;
+    }
+
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(fullUrl)}`;
+    if (iframeRef.current) {
+      iframeRef.current.src = proxyUrl;
+    }
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-theme(spacing.16))]">
@@ -99,9 +202,42 @@ export function CampaignBuilder() {
             </Select>
           </div>
 
-          <div className="bg-muted/30 rounded-lg flex-1 border">
+          {/* Website URL Input */}
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  value={targetUrl}
+                  onChange={(e) => setTargetUrl(e.target.value)}
+                  placeholder="Enter website URL to customize"
+                  className="w-full"
+                />
+              </div>
+              <Button onClick={loadWebsite} className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Load
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              💡 Try our test page: <code>/api/test-page</code> or enter any
+              website URL
+            </div>
+          </div>
+
+          {/* Website Preview with Element Selection */}
+          <div className="bg-muted/30 rounded-lg flex-1 border relative">
+            {!isProxyReady && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+                <div className="text-center">
+                  <Settings className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                  <p className="text-sm text-muted-foreground">
+                    Loading website for element selection...
+                  </p>
+                </div>
+              </div>
+            )}
             <iframe
-              src="https://super-site.com"
+              ref={iframeRef}
               className="w-full h-full rounded-lg"
               title="Website Preview"
             />
@@ -111,70 +247,104 @@ export function CampaignBuilder() {
         <aside className="md:col-span-1 lg:col-span-1 h-full">
           <Card className="h-full">
             <CardHeader>
-              <CardTitle>Editing Headline</CardTitle>
+              <CardTitle>
+                {selectedElement ? "Editing Element" : "Select Element"}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <Label htmlFor="element-name">Selected item</Label>
-                <Input
-                  id="element-name"
-                  defaultValue="h1 hero"
-                  readOnly
-                  className="border-0 shadow-none focus-visible:ring-0 p-0 h-auto"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="headline-text">Content</Label>
-                <Textarea
-                  id="headline-text"
-                  defaultValue="Jokainen vierailu alkaa ensivaikutelmasta – tee siitä hyvä"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="ai-managed-toggle"
-                  checked={isAiManaged}
-                  onCheckedChange={setIsAiManaged}
-                />
-                <Label htmlFor="ai-managed-toggle">AI Managed Content</Label>
-              </div>
-
-              {isAiManaged && (
-                <div className="space-y-4 pl-4 border-l-2 ml-2">
+              {selectedElement ? (
+                <>
                   <div>
-                    <Label htmlFor="ai-restrictions">Restrictions for AI</Label>
-                    <Textarea
-                      id="ai-restrictions"
-                      placeholder="e.g. Do not use emojis."
+                    <Label htmlFor="element-selector">CSS Selector</Label>
+                    <Input
+                      id="element-selector"
+                      value={selectedElement.selector}
+                      readOnly
+                      className="font-mono text-xs"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="ai-guidance">Guidance for AI</Label>
+                    <Label htmlFor="element-content">Content</Label>
                     <Textarea
-                      id="ai-guidance"
-                      placeholder="e.g. Make it sound exciting."
+                      id="element-content"
+                      value={selectedElement.content.text}
+                      onChange={(e) => {
+                        setSelectedElement((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                content: {
+                                  ...prev.content,
+                                  text: e.target.value,
+                                },
+                              }
+                            : null
+                        );
+                      }}
+                      rows={3}
                     />
                   </div>
 
-                  <div>
-                    <Button variant="outline" className="w-full">
-                      <Upload className="mr-2 h-4 w-4" /> Load Reference Files
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="ai-managed-toggle"
+                      checked={isAiManaged}
+                      onCheckedChange={setIsAiManaged}
+                    />
+                    <Label htmlFor="ai-managed-toggle">
+                      AI Managed Content
+                    </Label>
+                  </div>
+
+                  {isAiManaged && (
+                    <div className="space-y-4 pl-4 border-l-2 ml-2">
+                      <div>
+                        <Label htmlFor="ai-restrictions">
+                          Restrictions for AI
+                        </Label>
+                        <Textarea
+                          id="ai-restrictions"
+                          placeholder="e.g. Do not use emojis."
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="ai-guidance">Guidance for AI</Label>
+                        <Textarea
+                          id="ai-guidance"
+                          placeholder="e.g. Make it sound exciting."
+                        />
+                      </div>
+
+                      <div>
+                        <Button variant="outline" className="w-full">
+                          <Upload className="mr-2 h-4 w-4" /> Load Reference
+                          Files
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={handleGenerateAI}
+                    >
+                      <Bot className="mr-2 h-4 w-4" /> Generate with AI
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full">
+                      Import from Wizard
                     </Button>
                   </div>
+                </>
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Click on any element in the website to start editing</p>
                 </div>
               )}
-
-              <div className="space-y-2">
-                <Button size="sm" className="w-full">
-                  <Bot className="mr-2 h-4 w-4" /> Generate with AI
-                </Button>
-                <Button variant="outline" size="sm" className="w-full">
-                  Import from Wizard
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </aside>

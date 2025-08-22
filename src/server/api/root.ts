@@ -1,4 +1,5 @@
 import { campaignRouter } from "~/server/api/routers/campaign";
+import { personalizationRouter } from "~/server/api/routers/personalization";
 import { postRouter } from "~/server/api/routers/post";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
@@ -10,6 +11,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 export const appRouter = createTRPCRouter({
   post: postRouter,
   campaign: campaignRouter,
+  personalization: personalizationRouter,
 });
 
 // export type definition of API
