@@ -21,7 +21,7 @@ export async function aiGeneratePageContent(
     targetAudience: string;
     restrictions?: string[];
     guidance?: string;
-  },
+  }
 ): Promise<AIContentGeneration> {
   try {
     // Check if Ollama is available
@@ -58,7 +58,7 @@ export async function aiGeneratePageContent(
 
     // Extract and parse JSON response
     const jsonResponse = extractJSONFromResponse(
-      response,
+      response
     ) as AIContentGeneration;
 
     // Validate and return the structured response
@@ -95,7 +95,7 @@ export async function aiGenerateIpc(
     styles?: Record<string, string>;
     attributes?: Record<string, string>;
   },
-  sessionId: string,
+  sessionId: string
 ): Promise<AIIPC> {
   // TODO: Replace with actual AI call
   // const prompt = `
@@ -136,7 +136,7 @@ export async function aiGenerateCampaignPersonalization(
     aiGenerated: boolean;
     restrictions?: string[];
     guidance?: string;
-  }>,
+  }>
 ): Promise<CampaignPersonalization> {
   // TODO: Replace with actual AI call
   // const prompt = `
@@ -184,7 +184,7 @@ export async function aiGenerateCampaignPersonalization(
 // Utility function to validate AI responses
 export function validateAIResponse<T>(
   schema: z.ZodSchema<T>,
-  response: unknown,
+  response: unknown
 ): T {
   try {
     return schema.parse(response);
