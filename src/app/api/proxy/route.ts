@@ -1,3 +1,6 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
+
 import { type NextRequest, NextResponse } from "next/server";
 
 /**
@@ -28,7 +31,7 @@ export async function GET(request: NextRequest) {
   if (!targetUrl) {
     return NextResponse.json(
       { error: "URL parameter required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -79,7 +82,7 @@ export async function GET(request: NextRequest) {
     console.error("Proxy error:", error);
     return NextResponse.json(
       { error: "Failed to fetch target URL" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

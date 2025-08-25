@@ -36,7 +36,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { Bot, Save, PlusCircle, Upload, Globe, Settings } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { SelectedElement } from "~/lib/types/ai-output";
-import { aiGeneratePageContent } from "~/lib/ai-functions";
+import { api } from "~/trpc/react";
 import { AIStatus } from "./ai-status";
 
 export function CampaignBuilder() {
@@ -64,6 +64,9 @@ export function CampaignBuilder() {
   // DOM-referenssit
   const iframeRef = useRef<HTMLIFrameElement>(null); // Referenssi iframe-elementtiin
 
+  // tRPC mutation for server-side AI generation
+  const generateContent = api.personalization.generateContent.useMutation();
+
   // Handle iframe messages
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -87,7 +90,7 @@ export function CampaignBuilder() {
     return () => window.removeEventListener("message", handleMessage);
   }, [personalizedElements]);
 
-  // Generate AI content for selected element
+  // Generate AI content for selected element (server-side via tRPC)
   const handleGenerateAI = async () => {
     if (!selectedElement || isGenerating) return;
 
@@ -100,7 +103,8 @@ export function CampaignBuilder() {
         .map((r) => r.trim())
         .filter((r) => r.length > 0);
 
-      const result = await aiGeneratePageContent(selectedElement.content.text, {
+      const result = await generateContent.mutateAsync({
+        originalContent: selectedElement.content.text,
         campaignName: "Summer Sale 2025",
         targetAudience: "Young professionals",
         restrictions: restrictions.length > 0 ? restrictions : undefined,
@@ -117,7 +121,7 @@ export function CampaignBuilder() {
                 text: result.generatedContent,
               },
             }
-          : null
+          : null,
       );
 
       // Update in personalized elements list
@@ -128,8 +132,8 @@ export function CampaignBuilder() {
                 ...el,
                 content: { ...el.content, text: result.generatedContent },
               }
-            : el
-        )
+            : el,
+        ),
       );
 
       console.log("AI Generation Result:", result);
@@ -329,7 +333,7 @@ export function CampaignBuilder() {
                                   text: e.target.value,
                                 },
                               }
-                            : null
+                            : null,
                         );
                       }}
                       rows={3}
@@ -358,7 +362,7 @@ export function CampaignBuilder() {
                           placeholder="e.g. Do not use emojis, Keep it professional"
                           value={aiRestrictions}
                           onChange={(
-                            e: React.ChangeEvent<HTMLTextAreaElement>
+                            e: React.ChangeEvent<HTMLTextAreaElement>,
                           ) => setAiRestrictions(e.target.value)}
                         />
                       </div>
@@ -370,7 +374,7 @@ export function CampaignBuilder() {
                           placeholder="e.g. Make it sound exciting and action-oriented"
                           value={aiGuidance}
                           onChange={(
-                            e: React.ChangeEvent<HTMLTextAreaElement>
+                            e: React.ChangeEvent<HTMLTextAreaElement>,
                           ) => setAiGuidance(e.target.value)}
                         />
                       </div>

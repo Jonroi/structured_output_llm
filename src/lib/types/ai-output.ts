@@ -58,7 +58,7 @@ export const AIContentGenerationSchema = z.object({
 // ============================================================================
 
 /**
- * AIIPCSchema - Määrittelee AI:n generoimat komentot verkkosivun muokkaamiseksi
+ * AIIPCSchema - Määrittelee AI:n generoimat komennot verkkosivun muokkaamiseksi
  * Käytetään kun AI haluaa muokata sivun elementtejä ohjelmallisesti
  */
 export const AIIPCSchema = z.object({
@@ -103,7 +103,7 @@ export const CampaignPersonalizationSchema = z.object({
       aiGenerated: z.boolean(), // Onko sisältö AI:n generoima
       restrictions: z.array(z.string()).optional(), // AI-rajoitukset (valinnainen)
       guidance: z.string().optional(), // AI-ohjeet (valinnainen)
-    })
+    }),
   ),
   metadata: z.object({
     createdAt: z.string(), // Kampanjan luontiaika
