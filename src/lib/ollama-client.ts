@@ -93,7 +93,7 @@ export class OllamaClient {
       // Tarkista että vastaus on onnistunut
       if (!response.ok) {
         throw new Error(
-          `Ollama API error: ${response.status} ${response.statusText}`
+          `Ollama API error: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -106,7 +106,7 @@ export class OllamaClient {
     } catch (error) {
       console.error("Ollama API call failed:", error);
       throw new Error(
-        `Failed to generate content with Ollama: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to generate content with Ollama: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -168,7 +168,7 @@ export function createContentGenerationPrompt(
     targetAudience: string;
     restrictions?: string[];
     guidance?: string;
-  }
+  },
 ): string {
   return `You are a marketing content specialist. Your task is to improve and personalize content for a specific campaign.
 
@@ -197,5 +197,104 @@ Important:
 - Apply the guidance given
 - Keep the same general meaning but improve tone, clarity, and appeal
 - Provide exactly 2 alternative versions
+- Respond with ONLY the JSON object, no other text`;
+}
+
+// Helper function to create a structured prompt for IPC generation
+export function createIpcGenerationPrompt(
+  action: "update_element" | "add_element" | "remove_element" | "modify_style",
+  target: {
+    selector: string;
+    campaignId: string;
+    variantId?: string;
+  },
+  changes: {
+    content?: string;
+    styles?: Record<string, string>;
+    attributes?: Record<string, string>;
+  },
+  sessionId: string,
+): string {
+  return `You are a web development assistant. Your task is to generate an IPC (Inter-Process Communication) command to modify a webpage element.
+
+ACTION: ${action}
+TARGET: ${JSON.stringify(target)}
+CHANGES: ${JSON.stringify(changes)}
+
+TASK: Generate an IPC command that will modify the webpage element according to the specified action and changes.
+
+RESPONSE FORMAT: You must respond with ONLY a valid JSON object in this exact format:
+{
+  "action": "${action}",
+  "target": {
+    "selector": "${target.selector}",
+    "campaignId": "${target.campaignId}",
+    "variantId": "${target.variantId ?? ""}"
+  },
+  "changes": {
+    "content": "${changes.content ?? ""}",
+    "styles": ${JSON.stringify(changes.styles ?? {})},
+    "attributes": ${JSON.stringify(changes.attributes ?? {})}
+  },
+  "metadata": {
+    "timestamp": "current ISO timestamp",
+    "userId": null,
+    "sessionId": "${sessionId}"
+  }
+}
+
+Important:
+- Keep the action, target, and changes exactly as provided
+- Add the current timestamp in ISO format
+- Set userId to null if not provided
+- Use the provided sessionId
+- Respond with ONLY the JSON object, no other text`;
+}
+
+// Helper function to create a structured prompt for campaign personalization
+export function createCampaignPersonalizationPrompt(
+  campaignId: string,
+  elements: Array<{
+    selector: string;
+    originalContent: string;
+    aiGenerated: boolean;
+    restrictions?: string[];
+    guidance?: string;
+  }>,
+): string {
+  const elementsJson = JSON.stringify(elements, null, 2);
+  return `You are a marketing campaign specialist. Your task is to generate a complete campaign personalization plan for multiple webpage elements.
+
+CAMPAIGN ID: ${campaignId}
+ELEMENTS TO PERSONALIZE: ${elementsJson}
+
+TASK: Generate personalized content for each element that is more engaging and targeted to the campaign goals.
+
+RESPONSE FORMAT: You must respond with ONLY a valid JSON object in this exact format:
+{
+  "campaignId": "${campaignId}",
+  "elements": [
+    {
+      "selector": "css-selector",
+      "originalContent": "original text",
+      "personalizedContent": "new personalized text",
+      "aiGenerated": true,
+      "restrictions": ["restriction1", "restriction2"],
+      "guidance": "guidance text"
+    }
+  ],
+  "metadata": {
+    "createdAt": "current ISO timestamp",
+    "updatedAt": "current ISO timestamp",
+    "version": "1.0.0"
+  }
+}
+
+Important:
+- Personalize each element's content to be more engaging and campaign-specific
+- Keep the original selector, restrictions, and guidance for each element
+- Set aiGenerated to true for all elements
+- Make the personalized content more compelling and conversion-focused
+- Use the current timestamp for both createdAt and updatedAt
 - Respond with ONLY the JSON object, no other text`;
 }

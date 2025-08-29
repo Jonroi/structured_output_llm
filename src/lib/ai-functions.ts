@@ -11,6 +11,8 @@ import {
   ollamaClient,
   extractJSONFromResponse,
   createContentGenerationPrompt,
+  createIpcGenerationPrompt,
+  createCampaignPersonalizationPrompt,
 } from "~/lib/ollama-client";
 
 /**
@@ -51,7 +53,7 @@ export async function aiGeneratePageContent(
     targetAudience: string; // Kohderyhmä (esim. "Young professionals")
     restrictions?: string[]; // AI-rajoitukset (esim. ["Ei emoji", "Ammatillinen sävy"])
     guidance?: string; // AI-ohjeet (esim. "Tee siitä jännittävä")
-  }
+  },
 ): Promise<AIContentGeneration> {
   try {
     // Check if Ollama is available
@@ -88,7 +90,7 @@ export async function aiGeneratePageContent(
 
     // Extract and parse JSON response
     const jsonResponse = extractJSONFromResponse(
-      response
+      response,
     ) as AIContentGeneration;
 
     // Validate and return the structured response
@@ -125,36 +127,70 @@ export async function aiGenerateIpc(
     styles?: Record<string, string>;
     attributes?: Record<string, string>;
   },
-  sessionId: string
+  sessionId: string,
 ): Promise<AIIPC> {
-  // TODO: Replace with actual AI call
-  // const prompt = `
-  //   Action: ${action}
-  //   Target: ${JSON.stringify(target)}
-  //   Changes: ${JSON.stringify(changes)}
-  //
-  //   Generate an IPC command to modify the webpage element.
-  //   Return a JSON object with the following structure:
-  //   {
-  //     "action": "update_element",
-  //     "target": { "selector": "css-selector", "campaignId": "id", "variantId": "optional" },
-  //     "changes": { "content": "new content", "styles": {}, "attributes": {} },
-  //     "metadata": { "timestamp": "ISO-string", "sessionId": "string" }
-  //   }
-  // `;
+  try {
+    // Check if Ollama is available
+    const isAvailable = await ollamaClient.isAvailable();
+    if (!isAvailable) {
+      console.warn("Ollama is not available, using mock IPC response");
+      const mockResponse = {
+        action,
+        target,
+        changes,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          userId: undefined,
+          sessionId,
+        },
+      };
+      return AIIPCSchema.parse(mockResponse);
+    }
 
-  const mockResponse = {
-    action,
-    target,
-    changes,
-    metadata: {
-      timestamp: new Date().toISOString(),
-      userId: undefined,
+    // Create structured prompt for IPC generation
+    const prompt = createIpcGenerationPrompt(
+      action,
+      target,
+      changes,
       sessionId,
-    },
-  };
+    );
 
-  return AIIPCSchema.parse(mockResponse);
+    // Call Ollama API
+    const response = await ollamaClient.generate({
+      model: "llama3.2",
+      prompt,
+      options: {
+        temperature: 0.3, // Lower temperature for more consistent IPC commands
+        top_p: 0.9,
+        num_predict: 300,
+      },
+    });
+
+    // Extract and parse JSON response
+    const jsonResponse = extractJSONFromResponse(response) as AIIPC;
+
+    // Validate and return the structured response
+    return AIIPCSchema.parse(jsonResponse);
+  } catch (error) {
+    console.error(
+      "AI IPC generation failed:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
+
+    // Fallback to mock response on error
+    const fallbackResponse = {
+      action,
+      target,
+      changes,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        userId: undefined,
+        sessionId,
+      },
+    };
+
+    return AIIPCSchema.parse(fallbackResponse);
+  }
 }
 
 // Campaign Personalization Function
@@ -166,55 +202,79 @@ export async function aiGenerateCampaignPersonalization(
     aiGenerated: boolean;
     restrictions?: string[];
     guidance?: string;
-  }>
+  }>,
 ): Promise<CampaignPersonalization> {
-  // TODO: Replace with actual AI call
-  // const prompt = `
-  //   Campaign ID: ${campaignId}
-  //   Elements to personalize: ${JSON.stringify(elements)}
-  //
-  //   Generate a complete campaign personalization plan.
-  //   Return a JSON object with the following structure:
-  //   {
-  //     "campaignId": "string",
-  //     "elements": [
-  //       {
-  //         "selector": "css-selector",
-  //         "originalContent": "original text",
-  //         "personalizedContent": "new text",
-  //         "aiGenerated": true,
-  //         "restrictions": ["no emojis"],
-  //         "guidance": "make it exciting"
-  //       }
-  //     ],
-  //     "metadata": {
-  //       "createdAt": "ISO-string",
-  //       "updatedAt": "ISO-string",
-  //       "version": "1.0.0"
-  //     }
-  //   }
-  // `;
+  try {
+    // Check if Ollama is available
+    const isAvailable = await ollamaClient.isAvailable();
+    if (!isAvailable) {
+      console.warn(
+        "Ollama is not available, using mock campaign personalization",
+      );
+      const mockResponse = {
+        campaignId,
+        elements: elements.map((element) => ({
+          ...element,
+          personalizedContent: `[Mock AI] ${element.originalContent} - Personalized for ${campaignId}`,
+        })),
+        metadata: {
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          version: "1.0.0",
+        },
+      };
+      return CampaignPersonalizationSchema.parse(mockResponse);
+    }
 
-  const mockResponse = {
-    campaignId,
-    elements: elements.map((element) => ({
-      ...element,
-      personalizedContent: `[AI] ${element.originalContent} - Personalized`,
-    })),
-    metadata: {
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      version: "1.0.0",
-    },
-  };
+    // Create structured prompt for campaign personalization
+    const prompt = createCampaignPersonalizationPrompt(campaignId, elements);
 
-  return CampaignPersonalizationSchema.parse(mockResponse);
+    // Call Ollama API
+    const response = await ollamaClient.generate({
+      model: "llama3.2",
+      prompt,
+      options: {
+        temperature: 0.7,
+        top_p: 0.9,
+        num_predict: 800, // Higher limit for multiple elements
+      },
+    });
+
+    // Extract and parse JSON response
+    const jsonResponse = extractJSONFromResponse(
+      response,
+    ) as CampaignPersonalization;
+
+    // Validate and return the structured response
+    return CampaignPersonalizationSchema.parse(jsonResponse);
+  } catch (error) {
+    console.error(
+      "AI campaign personalization failed:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
+
+    // Fallback to enhanced mock response on error
+    const fallbackResponse = {
+      campaignId,
+      elements: elements.map((element) => ({
+        ...element,
+        personalizedContent: `[Enhanced] ${element.originalContent} - Optimized for ${campaignId} campaign`,
+      })),
+      metadata: {
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        version: "1.0.0",
+      },
+    };
+
+    return CampaignPersonalizationSchema.parse(fallbackResponse);
+  }
 }
 
 // Utility function to validate AI responses
 export function validateAIResponse<T>(
   schema: z.ZodSchema<T>,
-  response: unknown
+  response: unknown,
 ): T {
   try {
     return schema.parse(response);
